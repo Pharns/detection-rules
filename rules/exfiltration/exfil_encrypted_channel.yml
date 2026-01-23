@@ -15,30 +15,29 @@ logsource:
   product: zeek
   service: ssl
 detection:
-  selection_nonstandard_port:
-    # TLS on non-standard ports
-    id.resp_p|notin:
-      - 443
-      - 8443
-      - 993
-      - 995
-      - 465
-      - 636
+  selection_any_tls:
+    # Any established TLS connection
     established: true
   selection_self_signed:
     # Self-signed or untrusted certificates
     validation_status: 'self signed certificate'
   selection_expired:
     validation_status|contains: 'expired'
-  selection_short_lived:
-    # Certificates valid for less than 30 days (staging/temp certs)
-    not_valid_after|relative_lt: '30d'
   selection_suspicious_issuer:
     issuer|contains:
       - 'localhost'
       - 'test'
       - 'self-signed'
       - 'fake'
+  filter_standard_ports:
+    # Standard TLS ports (exclude from non-standard port detection)
+    id.resp_p:
+      - 443
+      - 8443
+      - 993
+      - 995
+      - 465
+      - 636
   filter_internal:
     id.resp_h|startswith:
       - '10.'
@@ -51,7 +50,7 @@ detection:
       - '.test'
       - '.dev'
       - '.internal'
-  condition: (selection_nonstandard_port or selection_self_signed or selection_expired or selection_short_lived or selection_suspicious_issuer) and not filter_internal and not filter_development
+  condition: ((selection_any_tls and not filter_standard_ports) or selection_self_signed or selection_expired or selection_suspicious_issuer) and not filter_internal and not filter_development
 fields:
   - ts
   - id.orig_h
