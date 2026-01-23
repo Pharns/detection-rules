@@ -1,13 +1,13 @@
-title: Anomalous Login Time
+title: Anomalous Login Time - Off-Hours Access
 id: 8b9c0d1e-2f3a-4b5c-6d7e-8f9a0b1c2d3e
 status: experimental
 description: |
-  Detects successful logins outside of normal business hours.
-  Attackers often operate during off-hours to avoid detection.
-  Default: Alerts on logins between 10 PM and 5 AM local time.
+  Detects successful interactive logins that should be reviewed for off-hours access.
+  Time-based filtering (10 PM - 5 AM) should be implemented in SIEM query layer.
+  This rule captures the base events; apply time filter in your SIEM.
 author: Pharns Genece
 date: 2025/01/15
-modified: 2025/01/20
+modified: 2025/01/23
 references:
   - https://attack.mitre.org/techniques/T1078/
 logsource:
@@ -20,11 +20,6 @@ detection:
       - 2   # Interactive
       - 10  # RemoteInteractive (RDP)
       - 11  # CachedInteractive
-  timeframe:
-    # Off-hours detection (10 PM to 5 AM)
-    # Note: Adjust based on organization's timezone and schedule
-    time|gte: '22:00:00'
-    time|lte: '05:00:00'
   filter_service_accounts:
     TargetUserName|endswith: '$'
   filter_scheduled_tasks:
@@ -37,7 +32,7 @@ detection:
     TargetUserName:
       - 'oncall_admin'
       - 'security_analyst'
-  condition: selection and timeframe and not filter_service_accounts and not filter_scheduled_tasks and not filter_known_users
+  condition: selection and not filter_service_accounts and not filter_scheduled_tasks and not filter_known_users
 fields:
   - TimeCreated
   - TargetUserName
@@ -55,3 +50,7 @@ tags:
   - attack.t1078
   - attack.persistence
   - attack.t1078.002
+# Implementation Note:
+# Time-based filtering must be applied in your SIEM query.
+# Example for Elasticsearch: Add filter for @timestamp outside business hours
+# Example for Splunk: Add | where date_hour >= 22 OR date_hour <= 5
