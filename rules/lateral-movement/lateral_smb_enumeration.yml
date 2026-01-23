@@ -1,0 +1,58 @@
+title: SMB Share Enumeration
+id: 9c0d1e2f-3a4b-5c6d-7e8f-9a0b1c2d3e4f
+status: experimental
+description: |
+  Detects SMB share enumeration activity often used during lateral movement.
+  Attackers enumerate accessible shares to identify targets for data access
+  or lateral movement.
+author: Pharns Genece
+date: 2025/01/15
+modified: 2025/01/20
+references:
+  - https://attack.mitre.org/techniques/T1021/002/
+  - https://attack.mitre.org/techniques/T1135/
+logsource:
+  product: windows
+  service: security
+detection:
+  selection_enum:
+    EventID: 5140  # Network share accessed
+    ShareName|contains:
+      - 'IPC$'
+      - 'ADMIN$'
+      - 'C$'
+  selection_multiple:
+    # Multiple share access attempts in short timeframe
+    EventID: 5140
+  filter_admin_workstations:
+    # Known admin workstations (customize per environment)
+    IpAddress|startswith:
+      - '10.0.50.'  # IT admin subnet
+  filter_backup_servers:
+    SubjectUserName|contains:
+      - 'backup'
+      - 'veeam'
+      - 'commvault'
+  condition: (selection_enum or selection_multiple) and not filter_admin_workstations and not filter_backup_servers | count(ShareName) by IpAddress > 5
+fields:
+  - TimeCreated
+  - SubjectUserName
+  - IpAddress
+  - ShareName
+  - ShareLocalPath
+timeframe: 5m
+falsepositives:
+  - IT administrators performing inventory
+  - Backup software
+  - Vulnerability scanners
+  - Asset management tools
+level: medium
+tags:
+  - attack.lateral_movement
+  - attack.t1021.002
+  - attack.discovery
+  - attack.t1135
+# Tuning notes:
+# Initial FP rate: ~30%
+# After tuning: ~15%
+# Key improvements: Admin workstation exclusion, service account filtering

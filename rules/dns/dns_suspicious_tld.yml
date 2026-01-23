@@ -1,0 +1,62 @@
+title: DNS Query to Suspicious TLD
+id: 3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f
+status: experimental
+description: |
+  Detects DNS queries to top-level domains commonly associated with malicious activity.
+  These TLDs have historically higher rates of abuse due to low registration costs
+  or lax policies.
+author: Pharns Genece
+date: 2025/01/15
+modified: 2025/01/20
+references:
+  - https://attack.mitre.org/techniques/T1071/004/
+  - https://www.spamhaus.org/statistics/tlds/
+logsource:
+  product: zeek
+  service: dns
+detection:
+  selection:
+    query|endswith:
+      # High-abuse TLDs based on Spamhaus data
+      - '.tk'
+      - '.ml'
+      - '.ga'
+      - '.cf'
+      - '.gq'
+      - '.top'
+      - '.xyz'
+      - '.work'
+      - '.click'
+      - '.loan'
+      - '.download'
+      - '.racing'
+      - '.win'
+      - '.bid'
+      - '.stream'
+      - '.party'
+      - '.trade'
+      - '.webcam'
+      - '.science'
+      - '.review'
+  filter_legitimate:
+    # Known legitimate domains on suspicious TLDs
+    query|contains:
+      - 'google.'
+      - 'microsoft.'
+      - 'github.'
+  condition: selection and not filter_legitimate
+fields:
+  - ts
+  - id.orig_h
+  - query
+  - answers
+falsepositives:
+  - Legitimate services using cheap TLDs
+  - Development/testing environments
+  - URL shorteners (some use .tk)
+level: low
+tags:
+  - attack.command_and_control
+  - attack.t1071.004
+  - attack.initial_access
+  - attack.t1566

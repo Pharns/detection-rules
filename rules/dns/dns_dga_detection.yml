@@ -1,0 +1,47 @@
+title: Domain Generation Algorithm (DGA) Detection
+id: 2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e
+status: experimental
+description: |
+  Detects domains that match common DGA patterns used by malware families.
+  DGA domains typically have high consonant ratios, unusual character distribution,
+  and lack meaningful dictionary words.
+author: Pharns Genece
+date: 2025/01/15
+modified: 2025/01/20
+references:
+  - https://attack.mitre.org/techniques/T1568/002/
+  - https://umbrella.cisco.com/blog/detecting-dga-domains
+logsource:
+  product: zeek
+  service: dns
+detection:
+  selection_pattern:
+    # Common DGA patterns - consonant clusters, no vowels
+    query|re: '^[bcdfghjklmnpqrstvwxz]{4,}[0-9]*\.'
+  selection_numeric:
+    # Numeric-heavy domains often indicate DGA
+    query|re: '^[a-z]{2,4}[0-9]{6,}\.'
+  selection_length:
+    # Unusually long second-level domains
+    query|re: '^[a-z0-9]{20,}\.(com|net|org|info|biz)$'
+  filter_legitimate:
+    query|endswith:
+      - '.google.com'
+      - '.microsoft.com'
+      - '.amazon.com'
+      - '.apple.com'
+  condition: (selection_pattern or selection_numeric or selection_length) and not filter_legitimate
+fields:
+  - ts
+  - id.orig_h
+  - query
+  - qtype_name
+  - rcode_name
+falsepositives:
+  - Legitimate services with auto-generated subdomains
+  - URL shorteners
+  - Email tracking pixels
+level: medium
+tags:
+  - attack.command_and_control
+  - attack.t1568.002

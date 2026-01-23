@@ -1,0 +1,67 @@
+title: PsExec or WMI Remote Execution
+id: 0d1e2f3a-4b5c-6d7e-8f9a-0b1c2d3e4f5a
+status: experimental
+description: |
+  Detects remote execution via PsExec, WMI, or similar tools commonly used
+  for lateral movement. These techniques allow attackers to execute code
+  on remote systems using valid credentials.
+author: Pharns Genece
+date: 2025/01/15
+modified: 2025/01/20
+references:
+  - https://attack.mitre.org/techniques/T1021/002/
+  - https://attack.mitre.org/techniques/T1047/
+  - https://attack.mitre.org/techniques/T1569/002/
+logsource:
+  product: windows
+  service: security
+detection:
+  selection_psexec_service:
+    EventID: 7045  # Service installed
+    ServiceName|startswith: 'PSEXE'
+  selection_psexec_file:
+    EventID: 4688  # Process creation
+    NewProcessName|endswith:
+      - '\psexec.exe'
+      - '\psexec64.exe'
+      - '\paexec.exe'
+  selection_wmi:
+    EventID: 4688
+    NewProcessName|endswith: '\wmiprvse.exe'
+    ParentProcessName|endswith: '\svchost.exe'
+  selection_wmic_remote:
+    EventID: 4688
+    CommandLine|contains:
+      - 'wmic /node:'
+      - 'wmic.exe /node:'
+  selection_remote_service:
+    EventID: 4697  # Service installed (audit)
+    ServiceFileName|contains: '\\'  # UNC path indicates remote
+  filter_sccm:
+    # SCCM/MECM legitimate remote execution
+    NewProcessName|contains: 'ccm'
+  filter_admin_tools:
+    User|contains:
+      - 'SYSTEM'
+      - 'svc_sccm'
+      - 'svc_deploy'
+  condition: (selection_psexec_service or selection_psexec_file or selection_wmi or selection_wmic_remote or selection_remote_service) and not filter_sccm and not filter_admin_tools
+fields:
+  - TimeCreated
+  - SubjectUserName
+  - NewProcessName
+  - CommandLine
+  - ParentProcessName
+  - TargetServerName
+falsepositives:
+  - IT administrators using legitimate remote management
+  - SCCM/MECM deployments
+  - Authorized penetration testing
+  - Software deployment tools
+level: high
+tags:
+  - attack.lateral_movement
+  - attack.t1021.002
+  - attack.execution
+  - attack.t1047
+  - attack.t1569.002

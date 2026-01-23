@@ -1,0 +1,79 @@
+title: Suspicious HTTP User Agent
+id: 6f7a8b9c-0d1e-2f3a-4b5c-6d7e8f9a0b1c
+status: experimental
+description: |
+  Detects HTTP requests with user agents commonly associated with malware,
+  penetration testing tools, or suspicious scripting.
+author: Pharns Genece
+date: 2025/01/15
+modified: 2025/01/20
+references:
+  - https://attack.mitre.org/techniques/T1071/001/
+logsource:
+  product: zeek
+  service: http
+detection:
+  selection_tools:
+    user_agent|contains:
+      - 'curl/'
+      - 'wget/'
+      - 'python-requests'
+      - 'Python-urllib'
+      - 'Go-http-client'
+      - 'libwww-perl'
+      - 'Wget/'
+      - 'HTTPie/'
+  selection_exploit:
+    user_agent|contains:
+      - 'Nikto'
+      - 'sqlmap'
+      - 'Nmap'
+      - 'masscan'
+      - 'ZmEu'
+      - 'DirBuster'
+      - 'Gobuster'
+      - 'wfuzz'
+      - 'ffuf'
+      - 'nuclei'
+      - 'Burp'
+  selection_malware:
+    user_agent|contains:
+      - 'CholShim'
+      - 'Meterpreter'
+      - 'Cobalt'
+  selection_empty:
+    user_agent: ''
+  selection_suspicious_pattern:
+    # Single word or very short user agents
+    user_agent|re: '^[A-Za-z]{1,10}$'
+  filter_internal:
+    id.orig_h|startswith:
+      - '10.'
+      - '172.16.'
+      - '192.168.'
+  filter_automation:
+    # Legitimate automation from known sources
+    host|endswith:
+      - '.github.com'
+      - '.gitlab.com'
+      - '.jenkins.io'
+  condition: (selection_tools or selection_exploit or selection_malware or selection_empty or selection_suspicious_pattern) and not filter_internal and not filter_automation
+fields:
+  - ts
+  - id.orig_h
+  - id.resp_h
+  - host
+  - uri
+  - user_agent
+  - status_code
+falsepositives:
+  - Legitimate automation scripts
+  - CI/CD pipelines
+  - Monitoring systems
+  - API integrations
+level: medium
+tags:
+  - attack.command_and_control
+  - attack.t1071.001
+  - attack.reconnaissance
+  - attack.t1595

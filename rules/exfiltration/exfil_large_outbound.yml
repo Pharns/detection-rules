@@ -1,0 +1,61 @@
+title: Large Outbound Data Transfer
+id: 1e2f3a4b-5c6d-7e8f-9a0b-1c2d3e4f5a6b
+status: experimental
+description: |
+  Detects unusually large outbound data transfers that may indicate
+  data exfiltration. Threshold set at 100MB to external hosts.
+author: Pharns Genece
+date: 2025/01/15
+modified: 2025/01/20
+references:
+  - https://attack.mitre.org/techniques/T1048/
+  - https://attack.mitre.org/techniques/T1567/
+logsource:
+  product: zeek
+  service: conn
+detection:
+  selection:
+    # Outbound connections with large data transfer
+    orig_bytes|gte: 104857600  # 100 MB
+    local_orig: true
+    local_resp: false
+  filter_cloud_backup:
+    id.resp_h|startswith:
+      - '52.'    # AWS
+      - '13.'    # Azure
+      - '35.'    # GCP
+    id.resp_p:
+      - 443
+      - 8443
+  filter_internal:
+    id.resp_h|startswith:
+      - '10.'
+      - '172.16.'
+      - '192.168.'
+  filter_cdn:
+    # Known CDN upload destinations
+    id.resp_h|in:
+      # Akamai, Cloudflare, Fastly ranges (simplified)
+      - '104.16.0.0/12'
+  condition: selection and not filter_cloud_backup and not filter_internal and not filter_cdn
+fields:
+  - ts
+  - id.orig_h
+  - id.resp_h
+  - id.resp_p
+  - proto
+  - orig_bytes
+  - resp_bytes
+  - duration
+  - service
+falsepositives:
+  - Legitimate cloud backups
+  - Software updates/patches
+  - Video uploads (YouTube, Vimeo)
+  - Large file sharing services
+  - Development deployments
+level: medium
+tags:
+  - attack.exfiltration
+  - attack.t1048
+  - attack.t1567

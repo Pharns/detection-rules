@@ -1,0 +1,57 @@
+title: Anomalous Login Time
+id: 8b9c0d1e-2f3a-4b5c-6d7e-8f9a0b1c2d3e
+status: experimental
+description: |
+  Detects successful logins outside of normal business hours.
+  Attackers often operate during off-hours to avoid detection.
+  Default: Alerts on logins between 10 PM and 5 AM local time.
+author: Pharns Genece
+date: 2025/01/15
+modified: 2025/01/20
+references:
+  - https://attack.mitre.org/techniques/T1078/
+logsource:
+  product: windows
+  service: security
+detection:
+  selection:
+    EventID: 4624  # Successful logon
+    LogonType:
+      - 2   # Interactive
+      - 10  # RemoteInteractive (RDP)
+      - 11  # CachedInteractive
+  timeframe:
+    # Off-hours detection (10 PM to 5 AM)
+    # Note: Adjust based on organization's timezone and schedule
+    time|gte: '22:00:00'
+    time|lte: '05:00:00'
+  filter_service_accounts:
+    TargetUserName|endswith: '$'
+  filter_scheduled_tasks:
+    TargetUserName|contains:
+      - 'svc_'
+      - 'backup'
+      - 'admin_scheduled'
+  filter_known_users:
+    # Users with approved off-hours access (customize per environment)
+    TargetUserName:
+      - 'oncall_admin'
+      - 'security_analyst'
+  condition: selection and timeframe and not filter_service_accounts and not filter_scheduled_tasks and not filter_known_users
+fields:
+  - TimeCreated
+  - TargetUserName
+  - IpAddress
+  - WorkstationName
+  - LogonType
+falsepositives:
+  - Legitimate after-hours work
+  - On-call personnel
+  - International employees in different timezones
+  - Scheduled maintenance windows
+level: low
+tags:
+  - attack.initial_access
+  - attack.t1078
+  - attack.persistence
+  - attack.t1078.002

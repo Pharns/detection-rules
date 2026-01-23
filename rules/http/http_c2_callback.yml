@@ -1,0 +1,69 @@
+title: HTTP C2 Callback Indicators
+id: 5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b
+status: experimental
+description: |
+  Detects HTTP requests with characteristics commonly associated with C2 frameworks.
+  Includes detection for Cobalt Strike, Metasploit, Empire, and generic C2 patterns.
+author: Pharns Genece
+date: 2025/01/15
+modified: 2025/01/20
+references:
+  - https://attack.mitre.org/techniques/T1071/001/
+  - https://blog.cobaltstrike.com/2019/02/19/cobalt-strike-team-server-population-study/
+logsource:
+  product: zeek
+  service: http
+detection:
+  selection_cobalt_strike:
+    # Cobalt Strike default URIs
+    uri|contains:
+      - '/cm'
+      - '/ca'
+      - '/push'
+      - '/dpixel'
+      - '/pixel.gif'
+      - '/updates.rss'
+      - '/__utm.gif'
+      - '/submit.php'
+  selection_metasploit:
+    # Metasploit patterns
+    uri|re: '^/[A-Za-z0-9_-]{4}/?$'
+    method: 'POST'
+  selection_empire:
+    # Empire framework patterns
+    uri|contains:
+      - '/login/process.php'
+      - '/admin/get.php'
+      - '/news.php'
+  selection_generic:
+    # Generic C2 patterns
+    uri|re: '^/[a-f0-9]{8,}\.php'
+  selection_headers:
+    # Suspicious header combinations
+    user_agent|contains:
+      - 'Mozilla/4.0 (compatible; MSIE 8.0'  # Dated IE string
+      - 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit'  # Old Windows
+  filter_internal:
+    id.resp_h|startswith:
+      - '10.'
+      - '172.16.'
+      - '192.168.'
+  condition: (selection_cobalt_strike or selection_metasploit or selection_empire or selection_generic or selection_headers) and not filter_internal
+fields:
+  - ts
+  - id.orig_h
+  - id.resp_h
+  - host
+  - uri
+  - method
+  - user_agent
+  - status_code
+falsepositives:
+  - Legitimate services with similar URI patterns
+  - Old software with outdated user agents
+  - Custom internal applications
+level: high
+tags:
+  - attack.command_and_control
+  - attack.t1071.001
+  - attack.t1573

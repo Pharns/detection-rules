@@ -1,0 +1,76 @@
+title: Encrypted Channel Exfiltration Indicators
+id: 2f3a4b5c-6d7e-8f9a-0b1c-2d3e4f5a6b7c
+status: experimental
+description: |
+  Detects characteristics of encrypted exfiltration channels including
+  non-standard TLS ports, self-signed certificates, and unusual
+  encrypted traffic patterns.
+author: Pharns Genece
+date: 2025/01/15
+modified: 2025/01/20
+references:
+  - https://attack.mitre.org/techniques/T1048/001/
+  - https://attack.mitre.org/techniques/T1573/
+logsource:
+  product: zeek
+  service: ssl
+detection:
+  selection_nonstandard_port:
+    # TLS on non-standard ports
+    id.resp_p|notin:
+      - 443
+      - 8443
+      - 993
+      - 995
+      - 465
+      - 636
+    established: true
+  selection_self_signed:
+    # Self-signed or untrusted certificates
+    validation_status: 'self signed certificate'
+  selection_expired:
+    validation_status|contains: 'expired'
+  selection_short_lived:
+    # Certificates valid for less than 30 days (staging/temp certs)
+    not_valid_after|relative_lt: '30d'
+  selection_suspicious_issuer:
+    issuer|contains:
+      - 'localhost'
+      - 'test'
+      - 'self-signed'
+      - 'fake'
+  filter_internal:
+    id.resp_h|startswith:
+      - '10.'
+      - '172.16.'
+      - '192.168.'
+  filter_development:
+    # Development/staging environments
+    server_name|endswith:
+      - '.local'
+      - '.test'
+      - '.dev'
+      - '.internal'
+  condition: (selection_nonstandard_port or selection_self_signed or selection_expired or selection_short_lived or selection_suspicious_issuer) and not filter_internal and not filter_development
+fields:
+  - ts
+  - id.orig_h
+  - id.resp_h
+  - id.resp_p
+  - server_name
+  - subject
+  - issuer
+  - validation_status
+  - not_valid_before
+  - not_valid_after
+falsepositives:
+  - Internal development servers
+  - IoT devices with embedded certificates
+  - Legacy applications
+  - VPN concentrators on non-standard ports
+level: medium
+tags:
+  - attack.exfiltration
+  - attack.t1048.001
+  - attack.command_and_control
+  - attack.t1573.002

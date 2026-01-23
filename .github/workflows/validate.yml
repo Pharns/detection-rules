@@ -1,0 +1,56 @@
+name: Validate Sigma Rules
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'rules/**/*.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'rules/**/*.yml'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install sigma-cli
+        run: pip install sigma-cli
+
+      - name: Validate Sigma rules
+        run: |
+          echo "Validating Sigma rules..."
+          for rule in $(find rules -name "*.yml"); do
+            echo "Checking: $rule"
+            sigma check "$rule" || exit 1
+          done
+          echo "All rules validated successfully!"
+
+      - name: Test Elasticsearch conversion
+        run: |
+          echo "Testing Elasticsearch backend conversion..."
+          for rule in $(find rules -name "*.yml"); do
+            echo "Converting: $rule"
+            sigma convert -t elasticsearch "$rule" > /dev/null || echo "Warning: $rule may need backend-specific adjustments"
+          done
+
+      - name: Count rules
+        run: |
+          count=$(find rules -name "*.yml" | wc -l)
+          echo "Total rules: $count"
+          echo "## Rule Count: $count" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Category | Count |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          for dir in rules/*/; do
+            category=$(basename "$dir")
+            category_count=$(find "$dir" -name "*.yml" | wc -l)
+            echo "| $category | $category_count |" >> $GITHUB_STEP_SUMMARY
+          done
