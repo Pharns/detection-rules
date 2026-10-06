@@ -4,6 +4,8 @@
 [![MITRE ATT&CK](https://img.shields.io/badge/MITRE%20ATT%26CK-Mapped-red)](https://attack.mitre.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+> **Built by Pharns Genece.** 12 Sigma rules, ATT&CK-mapped, developed and tuned in a homelab running Security Onion, Wazuh, and TheHive/Cortex. Related: [TraceLock](https://portfolio.pharns.com/cybersecurity/tracelock/) (RF detection engineering) · [portfolio](https://portfolio.pharns.com)
+
 Custom Sigma detection rules developed and tuned in a homelab environment running Security Onion, Wazuh, and TheHive/Cortex.
 
 ## Overview
