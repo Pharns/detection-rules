@@ -1,5 +1,6 @@
 title: Authentication Brute Force Attempt
 id: 7a8b9c0d-1e2f-3a4b-5c6d-7e8f9a0b1c2d
+name: auth_failed_logon_base
 status: experimental
 description: |
   Detects multiple failed authentication attempts from a single source,
@@ -25,7 +26,7 @@ detection:
     # Internal vulnerability scanners
     IpAddress|startswith:
       - '10.0.10.'  # Security scanning subnet
-  condition: selection and not filter_service_accounts and not filter_known_scanners | count(TargetUserName) by IpAddress > 10
+  condition: selection and not filter_service_accounts and not filter_known_scanners
 fields:
   - TimeCreated
   - IpAddress
@@ -34,7 +35,6 @@ fields:
   - FailureReason
   - Status
   - SubStatus
-timeframe: 5m
 falsepositives:
   - Misconfigured service accounts
   - Users with expired passwords
@@ -50,3 +50,27 @@ tags:
 # Initial FP rate: ~25%
 # After tuning: ~8%
 # Key improvements: Baseline normal hours per user group, service account filtering
+---
+title: Authentication Brute Force Attempt (Correlation)
+id: 5762d012-1b91-49bc-95f0-0a63fa52137e
+status: experimental
+description: |
+  Correlation: more than 10 distinct target accounts with failed logons from one
+  source IP within 5 minutes. Replaces the deprecated pipe-count condition syntax.
+author: Pharns Genece
+date: 2025/01/15
+modified: 2026/10/08
+correlation:
+  type: value_count
+  rules:
+    - auth_failed_logon_base
+  group-by:
+    - IpAddress
+  timespan: 5m
+  condition:
+    field: TargetUserName
+    gt: 10
+level: medium
+tags:
+  - attack.credential_access
+  - attack.t1110

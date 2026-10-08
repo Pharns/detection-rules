@@ -1,13 +1,15 @@
-title: DNS Query Entropy Anomaly - Potential Tunneling
+title: DNS Long Alphanumeric Subdomain - Potential Tunneling
 id: 8a7c3b2d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
 status: experimental
 description: |
-  Detects high-entropy DNS queries indicative of DNS tunneling.
-  Attackers use DNS tunneling to exfiltrate data or establish C2 channels
-  by encoding data in DNS query subdomains.
+  Flags DNS queries whose first label is 32+ lowercase alphanumeric characters,
+  a common shape of encoded data in DNS tunneling (exfiltration or C2).
+  NOTE: this rule does NOT calculate Shannon entropy. The long-label regex is a
+  proxy for high-entropy subdomains; true entropy scoring must be done in the
+  SIEM/analytics layer. Filename kept for backward compatibility.
 author: Pharns Genece
 date: 2025/01/15
-modified: 2025/01/20
+modified: 2026/10/08
 references:
   - https://attack.mitre.org/techniques/T1071/004/
   - https://www.sans.org/reading-room/whitepapers/dns/detecting-dns-tunneling-34152

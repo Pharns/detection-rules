@@ -1,13 +1,15 @@
-title: HTTP Beaconing Pattern Detection
+title: HTTP Beaconing Candidate Requests
 id: 4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a
 status: experimental
 description: |
-  Detects regular HTTP callback patterns indicative of C2 beaconing.
-  Malware often beacons at consistent intervals (with jitter) to check for commands.
-  This rule identifies repeated connections to the same host with similar timing patterns.
+  Identifies CANDIDATE HTTP requests for C2 beaconing analysis: small responses,
+  GET/POST, and check-in-style URIs, excluding common legitimate hosts.
+  NOTE: this rule does NOT measure timing regularity. Confirming beaconing
+  (consistent intervals with jitter to the same host) requires SIEM correlation
+  over these candidates; that correlation layer is not included in this repo.
 author: Pharns Genece
 date: 2025/01/15
-modified: 2025/01/20
+modified: 2026/10/08
 references:
   - https://attack.mitre.org/techniques/T1071/001/
   - https://www.activecountermeasures.com/identifying-beacons/

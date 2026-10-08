@@ -30,18 +30,19 @@ jobs:
           errors=0
           for rule in $(find rules -name "*.yml"); do
             echo "Checking: $rule"
-            if ! sigma check "$rule" 2>&1; then
-              echo "::warning file=$rule::Sigma validation issue detected"
+            # Retry once: sigma check downloads MITRE ATT&CK data and can time out on the network.
+            if ! sigma check "$rule" 2>&1 && ! sigma check "$rule" 2>&1; then
+              echo "::error file=$rule::Sigma check failed (rule or condition error)"
               errors=$((errors + 1))
             fi
           done
           if [ $errors -gt 0 ]; then
-            echo "::notice::$errors rule(s) have validation warnings - review above"
-          else
-            echo "All rules validated successfully!"
+            echo "::error::$errors rule(s) failed sigma check - see above"
+            exit 1
           fi
-          # Don't fail the build - these are informational
-          exit 0
+          # Validation *issues* (e.g. tag or logsource style warnings) do not fail sigma check's exit code;
+          # they are shown in the output above for review.
+          echo "All rules passed sigma check."
 
       - name: Count rules
         run: |

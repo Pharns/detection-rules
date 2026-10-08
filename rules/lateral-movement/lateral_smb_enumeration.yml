@@ -1,5 +1,6 @@
 title: SMB Share Enumeration
 id: 9c0d1e2f-3a4b-5c6d-7e8f-9a0b1c2d3e4f
+name: smb_share_access_base
 status: experimental
 description: |
   Detects SMB share enumeration activity often used during lateral movement.
@@ -33,14 +34,13 @@ detection:
       - 'backup'
       - 'veeam'
       - 'commvault'
-  condition: (selection_enum or selection_multiple) and not filter_admin_workstations and not filter_backup_servers | count(ShareName) by IpAddress > 5
+  condition: (selection_enum or selection_multiple) and not filter_admin_workstations and not filter_backup_servers
 fields:
   - TimeCreated
   - SubjectUserName
   - IpAddress
   - ShareName
   - ShareLocalPath
-timeframe: 5m
 falsepositives:
   - IT administrators performing inventory
   - Backup software
@@ -56,3 +56,27 @@ tags:
 # Initial FP rate: ~30%
 # After tuning: ~15%
 # Key improvements: Admin workstation exclusion, service account filtering
+---
+title: SMB Share Enumeration (Correlation)
+id: 3fc6ada3-7b41-401b-9183-621ea4e0c35d
+status: experimental
+description: |
+  Correlation: more than 5 distinct shares accessed from one source IP within
+  5 minutes. Replaces the deprecated pipe-count condition syntax.
+author: Pharns Genece
+date: 2025/01/15
+modified: 2026/10/08
+correlation:
+  type: value_count
+  rules:
+    - smb_share_access_base
+  group-by:
+    - IpAddress
+  timespan: 5m
+  condition:
+    field: ShareName
+    gt: 5
+level: medium
+tags:
+  - attack.lateral_movement
+  - attack.t1021.002

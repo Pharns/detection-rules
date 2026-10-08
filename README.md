@@ -26,8 +26,8 @@ These rules were tuned over a 3-month lab period to reduce false positives:
 
 | Detection | Initial FP | After Tuning | Method |
 |-----------|------------|--------------|--------|
-| DNS tunneling | ~35% | ~12% | CDN allowlisting, entropy threshold |
-| HTTP beaconing | ~40% | ~18% | Time-window correlation, UA filtering |
+| DNS tunneling | ~35% | ~12% | CDN allowlisting, long-label length threshold (entropy proxy) |
+| HTTP beaconing | ~40% | ~18% | Candidate filtering, UA filtering (interval analysis requires SIEM correlation, not included) |
 | Auth anomalies | ~25% | ~8% | Baseline normal hours per user group |
 | Lateral movement | ~30% | ~15% | Admin workstation exclusions |
 
